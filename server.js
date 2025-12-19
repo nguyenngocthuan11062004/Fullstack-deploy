@@ -1,3 +1,5 @@
+require('dotenv').config(); 
+
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
@@ -8,9 +10,7 @@ app.use(cors());
 app.use(express.json());
 
 mongoose
-    .connect(
-        "mongodb+srv://20225413:20225413@cluster0.wdl9ui5.mongodb.net/IT4409?retryWrites=true&w=majority"
-    )
+    .connect(process.env.MONGO_URI)
     .then(() => console.log("Connected to MongoDB"))
     .catch((err) => console.error("MongoDB Error:", err));
 
@@ -42,7 +42,6 @@ const UserSchema = new mongoose.Schema({
 });
 
 const User = mongoose.model("User", UserSchema);
-
 
 //          GET
 app.get("/api/users", async (req, res) => {
@@ -87,7 +86,6 @@ app.get("/api/users", async (req, res) => {
     }
 });
 
-
 // POST
 app.post("/api/users", async (req, res) => {
     try {
@@ -105,7 +103,7 @@ app.post("/api/users", async (req, res) => {
     }
 });
 
-//          PUT
+// PUT
 app.put("/api/users/:id", async (req, res) => {
     try {
         const { id } = req.params;
@@ -136,7 +134,7 @@ app.put("/api/users/:id", async (req, res) => {
     }
 });
 
-//         DELETE
+// DELETE
 app.delete("/api/users/:id", async (req, res) => {
     try {
         const { id } = req.params;
@@ -153,7 +151,7 @@ app.delete("/api/users/:id", async (req, res) => {
     }
 });
 
-//       START SERVER
-app.listen(3001, () => {
-    console.log("Server running on http://localhost:3001");
+// START SERVER
+app.listen(process.env.PORT || 3001, () => {
+    console.log(`Server running on http://localhost:${process.env.PORT || 3001}`);
 });
