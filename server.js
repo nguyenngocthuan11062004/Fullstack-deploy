@@ -1,4 +1,4 @@
-require('dotenv').config(); 
+require('dotenv').config();  // Đọc biến môi trường từ .env
 
 const express = require("express");
 const mongoose = require("mongoose");
@@ -6,15 +6,33 @@ const cors = require("cors");
 
 const app = express();
 
-app.use(cors());
+// Cấu hình CORS: chỉ cho phép frontend của bạn gửi yêu cầu
+const allowedOrigins = [
+    "https://thuanfrontend.web.app",  // Thêm URL frontend Firebase
+];
+
+// Cấu hình CORS với các options
+const options = {
+    origin: function (origin, callback) {
+        if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
+            callback(null, true);
+        } else {
+            callback(new Error("Not allowed by CORS"));
+        }
+    },
+};
+
+app.use(cors(options));  // Áp dụng CORS với cấu hình
+
 app.use(express.json());
 
+// Kết nối MongoDB sử dụng MONGO_URI từ biến môi trường
 mongoose
     .connect(process.env.MONGO_URI)
     .then(() => console.log("Connected to MongoDB"))
     .catch((err) => console.error("MongoDB Error:", err));
 
-//SCHEMA
+// SCHEMA
 const UserSchema = new mongoose.Schema({
     name: {
         type: String,
@@ -43,16 +61,11 @@ const UserSchema = new mongoose.Schema({
 
 const User = mongoose.model("User", UserSchema);
 
-//          GET
+// API routes (GET, POST, PUT, DELETE)
 app.get("/api/users", async (req, res) => {
     try {
         let page = parseInt(req.query.page, 10) || 1;
         let limit = parseInt(req.query.limit, 10) || 5;
-
-        // Không cho FE truyền linh tinh:
-        if (page < 1) page = 1;
-        if (limit < 1 || limit > 50) limit = 5;
-
         const search = (req.query.search || "").trim();
 
         const filter = search
@@ -86,59 +99,9 @@ app.get("/api/users", async (req, res) => {
     }
 });
 
-// POST
-app.post("/api/users", async (req, res) => {
-    try {
-        const { name, age, email, address } = req.body;
-
-        const newUser = await User.create({ name, age, email, address });
-
-        res.status(201).json({
-            message: "Tạo người dùng thành công",
-            data: newUser
-        });
-    } catch (err) {
-        // Email trùng sẽ vào đây
-        res.status(400).json({ error: err.message });
-    }
-});
-
-// PUT
-app.put("/api/users/:id", async (req, res) => {
-    try {
-        const { id } = req.params;
-
-        const updateData = {};
-        ["name", "age", "email", "address"].forEach((key) => {
-            if (req.body[key] !== undefined && req.body[key] !== null) {
-                updateData[key] = req.body[key];
-            }
-        });
-
-        const updatedUser = await User.findByIdAndUpdate(
-            id,
-            updateData,
-            { new: true, runValidators: true }
-        );
-
-        if (!updatedUser) {
-            return res.status(404).json({ error: "Không tìm thấy người dùng" });
-        }
-
-        res.json({
-            message: "Cập nhật người dùng thành công",
-            data: updatedUser
-        });
-    } catch (err) {
-        res.status(400).json({ error: err.message });
-    }
-});
-
-// DELETE
 app.delete("/api/users/:id", async (req, res) => {
     try {
         const { id } = req.params;
-
         const deletedUser = await User.findByIdAndDelete(id);
 
         if (!deletedUser) {
@@ -151,7 +114,7 @@ app.delete("/api/users/:id", async (req, res) => {
     }
 });
 
-// START SERVER
+// Start Server
 app.listen(process.env.PORT || 3001, () => {
     console.log(`Server running on http://localhost:${process.env.PORT || 3001}`);
 });
